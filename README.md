@@ -53,8 +53,11 @@ uv run python -m parking_newtaipei --help
 ### 同步停車場資料
 
 ```bash
-# 實際執行
+# 實際執行（自動檢查內容是否變更）
 uv run python -m parking_newtaipei sync-parking
+
+# 強制同步（忽略雜湊檢查）
+uv run python -m parking_newtaipei sync-parking --force
 
 # 測試模式（不實際執行）
 uv run python -m parking_newtaipei sync-parking --dry-run
@@ -74,7 +77,14 @@ uv run python -m parking_newtaipei --debug sync-parking
 
 ## 同步行為
 
-執行 `sync-parking` 時的處理邏輯：
+### 內容變更檢查
+
+每次下載後會計算 SHA256 雜湊值，與上次同步的雜湊值比對：
+- **雜湊相同** + 資料表非空 → 跳過同步，避免不必要的資料庫操作
+- **雜湊不同** 或 資料表為空 → 執行完整同步
+- 使用 `--force` 可強制同步，忽略雜湊檢查
+
+### 資料處理邏輯
 
 | 情況 | 處理方式 |
 |------|----------|

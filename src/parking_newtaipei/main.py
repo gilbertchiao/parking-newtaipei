@@ -48,6 +48,11 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="測試模式，顯示設定但不實際執行",
     )
+    sync_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="強制同步，忽略內容雜湊檢查",
+    )
 
     # stats 指令
     subparsers.add_parser(
@@ -94,7 +99,13 @@ def cmd_sync_parking(args: argparse.Namespace) -> int:
     try:
         # 執行同步
         sync = ParkingLotSync(db=db, api_client=api_client)
-        result = sync.sync()
+        result = sync.sync(force=args.force)
+
+        # 檢查是否跳過
+        if result.skipped:
+            logger.info("=== 同步跳過 ===")
+            logger.info("  原因: 內容未變更")
+            return 0
 
         # 顯示結果
         logger.info("=== 同步結果 ===")

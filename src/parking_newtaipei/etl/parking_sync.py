@@ -4,6 +4,7 @@
 """
 
 import csv
+import hashlib
 from dataclasses import dataclass
 from io import StringIO
 from typing import Iterator
@@ -46,6 +47,7 @@ class SyncResult:
     updated: int = 0
     deleted: int = 0
     total_processed: int = 0
+    skipped: bool = False  # 是否因內容未變更而跳過
     errors: list[str] = None
 
     def __post_init__(self):
@@ -120,8 +122,22 @@ class ParkingLotSync:
 
         return content
 
-    def sync(self) -> SyncResult:
+    def _compute_hash(self, content: str) -> str:
+        """計算內容的 SHA256 雜湊值
+
+        Args:
+            content: 要計算雜湊的字串內容
+
+        Returns:
+            SHA256 雜湊值（16 進位字串）
+        """
+        return hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+    def sync(self, force: bool = False) -> SyncResult:
         """執行同步作業
+
+        Args:
+            force: 強制同步，忽略雜湊檢查
 
         Returns:
             同步結果
@@ -139,6 +155,19 @@ class ParkingLotSync:
             self.logger.error(error_msg)
             result.errors.append(error_msg)
             return result
+
+        # 計算下載內容的雜湊值
+        current_hash = self._compute_hash(csv_content)
+        previous_hash = self.repo.get_content_hash()
+
+        # 檢查是否需要同步
+        if not force and previous_hash == current_hash and self.repo.has_data():
+            self.logger.info(f"內容未變更（hash: {current_hash[:16]}...），跳過同步")
+            result.skipped = True
+            return result
+
+        if previous_hash != current_hash:
+            self.logger.info(f"偵測到內容變更（hash: {current_hash[:16]}...）")
 
         # 取得目前資料庫中所有有效的 ID
         existing_ids = self.repo.get_all_active_ids()
@@ -170,6 +199,10 @@ class ParkingLotSync:
             deleted_count = self.repo.mark_deleted(ids_to_delete)
             result.deleted = deleted_count
             self.logger.info(f"標記 {deleted_count} 筆資料為已刪除")
+
+        # 同步成功後更新雜湊值
+        if not result.errors:
+            self.repo.set_content_hash(current_hash)
 
         # 記錄結果
         self.logger.info(

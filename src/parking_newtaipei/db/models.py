@@ -8,6 +8,15 @@ from datetime import datetime
 from parking_newtaipei.db.connection import DatabaseConnection
 from parking_newtaipei.utils.logger import get_logger
 
+# 同步 metadata 資料表 SQL（儲存雜湊值等資訊）
+CREATE_SYNC_METADATA_TABLE = """
+CREATE TABLE IF NOT EXISTS sync_metadata (
+    key TEXT PRIMARY KEY,
+    value TEXT,
+    updated_at TEXT NOT NULL
+)
+"""
+
 # 停車場資料表 SQL
 CREATE_PARKING_LOT_TABLE = """
 CREATE TABLE IF NOT EXISTS parking_lots (
@@ -52,6 +61,7 @@ class ParkingLotRepository:
 
     def init_tables(self) -> None:
         """初始化資料表"""
+        self.db.execute(CREATE_SYNC_METADATA_TABLE)
         self.db.execute(CREATE_PARKING_LOT_TABLE)
         for index_sql in CREATE_INDEXES:
             self.db.execute(index_sql)
@@ -199,3 +209,41 @@ class ParkingLotRepository:
             "active": active["count"] if active else 0,
             "deleted": deleted["count"] if deleted else 0,
         }
+
+    def has_data(self) -> bool:
+        """檢查是否有資料
+
+        Returns:
+            是否有任何停車場資料
+        """
+        result = self.db.fetch_one("SELECT COUNT(*) as count FROM parking_lots")
+        return result["count"] > 0 if result else False
+
+    def get_content_hash(self) -> str | None:
+        """取得上次同步的內容雜湊值
+
+        Returns:
+            雜湊值字串，若無記錄則為 None
+        """
+        result = self.db.fetch_one(
+            "SELECT value FROM sync_metadata WHERE key = ?",
+            ("parking_lots_hash",),
+        )
+        return result["value"] if result else None
+
+    def set_content_hash(self, hash_value: str) -> None:
+        """設定內容雜湊值
+
+        Args:
+            hash_value: 雜湊值字串
+        """
+        now = datetime.now().isoformat()
+        # 使用 UPSERT 語法
+        self.db.execute(
+            """
+            INSERT INTO sync_metadata (key, value, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = ?
+            """,
+            ("parking_lots_hash", hash_value, now, hash_value, now),
+        )
