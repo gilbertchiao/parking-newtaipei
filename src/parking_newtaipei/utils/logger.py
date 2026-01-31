@@ -1,11 +1,11 @@
 """日誌設定模組
 
-提供 RotatingFileHandler 和 console 輸出的日誌設定。
+提供 TimedRotatingFileHandler（每日輪詢）和 console 輸出的日誌設定。
 """
 
 import logging
 import sys
-from logging.handlers import RotatingFileHandler
+from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 
 # 日誌格式
@@ -20,8 +20,7 @@ def setup_logger(
     name: str = "parking_newtaipei",
     level: str = "INFO",
     log_file: Path | None = None,
-    max_bytes: int = 10 * 1024 * 1024,
-    backup_count: int = 5,
+    backup_days: int = 30,
 ) -> logging.Logger:
     """設定並回傳 logger
 
@@ -29,8 +28,7 @@ def setup_logger(
         name: Logger 名稱
         level: 日誌等級（DEBUG, INFO, WARNING, ERROR, CRITICAL）
         log_file: 日誌檔案路徑，若為 None 則只輸出到 console
-        max_bytes: 單一日誌檔案最大大小（預設 10MB）
-        backup_count: 保留的日誌檔案數量（預設 5 個）
+        backup_days: 日誌保留天數（預設 30 天）
 
     Returns:
         設定好的 Logger 物件
@@ -50,14 +48,18 @@ def setup_logger(
     logger.addHandler(console_handler)
 
     # File handler（如果有指定）
+    # 使用 TimedRotatingFileHandler 每日輪詢
     if log_file:
         log_file.parent.mkdir(parents=True, exist_ok=True)
-        file_handler = RotatingFileHandler(
+        file_handler = TimedRotatingFileHandler(
             log_file,
-            maxBytes=max_bytes,
-            backupCount=backup_count,
+            when="midnight",  # 每天午夜輪詢
+            interval=1,
+            backupCount=backup_days,
             encoding="utf-8",
         )
+        # 設定備份檔案後綴格式：app.log.2026-02-01
+        file_handler.suffix = "%Y-%m-%d"
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
 
@@ -81,12 +83,11 @@ def get_logger(name: str = "parking_newtaipei") -> logging.Logger:
         return _loggers[name]
 
     # 延遲載入 config 以避免循環引用
-    from parking_newtaipei.config import LOG_FILE, LOG_LEVEL, LOG_MAX_BYTES, LOG_BACKUP_COUNT
+    from parking_newtaipei.config import LOG_BACKUP_DAYS, LOG_FILE, LOG_LEVEL
 
     return setup_logger(
         name=name,
         level=LOG_LEVEL,
         log_file=LOG_FILE,
-        max_bytes=LOG_MAX_BYTES,
-        backup_count=LOG_BACKUP_COUNT,
+        backup_days=LOG_BACKUP_DAYS,
     )

@@ -39,6 +39,7 @@ cp .env.example .env
 
 ```env
 LOG_LEVEL=INFO
+# LOG_BACKUP_DAYS=30
 # DB_PATH=data/db/parking.db
 # AVAILABILITY_DB_DIR=data/availability/
 # RESPONSES_PATH=data/responses/

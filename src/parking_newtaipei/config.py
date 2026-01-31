@@ -33,8 +33,7 @@ RESPONSES_PATH = Path(os.getenv("RESPONSES_PATH", str(RESPONSES_DIR)))
 
 # 日誌設定
 LOG_FILE = LOGS_DIR / "app.log"
-LOG_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
-LOG_BACKUP_COUNT = 5
+LOG_BACKUP_DAYS = int(os.getenv("LOG_BACKUP_DAYS", "30"))  # 日誌保留天數
 
 
 def ensure_directories() -> None:
@@ -53,4 +52,5 @@ def get_config_summary() -> dict:
         "availability_db_dir": str(AVAILABILITY_DB_DIR),
         "responses_path": str(RESPONSES_PATH),
         "log_file": str(LOG_FILE),
+        "log_backup_days": LOG_BACKUP_DAYS,
     }
