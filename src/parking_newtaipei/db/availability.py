@@ -8,6 +8,7 @@ from pathlib import Path
 
 from parking_newtaipei.db.connection import DatabaseConnection
 from parking_newtaipei.utils.logger import get_logger
+from parking_newtaipei.utils.time import now_iso
 
 # 即時車位資料表 SQL
 CREATE_AVAILABILITY_TABLE = """
@@ -95,7 +96,7 @@ class AvailabilityRepository:
             return 0
 
         db = self._get_current_db()
-        now = datetime.now().isoformat()
+        now = now_iso()
 
         # 準備批次寫入資料
         params_list = [

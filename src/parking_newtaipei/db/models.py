@@ -3,10 +3,9 @@
 定義停車場資料表結構與操作。
 """
 
-from datetime import datetime
-
 from parking_newtaipei.db.connection import DatabaseConnection
 from parking_newtaipei.utils.logger import get_logger
+from parking_newtaipei.utils.time import now_iso
 
 # 同步 metadata 資料表 SQL（儲存雜湊值等資訊）
 CREATE_SYNC_METADATA_TABLE = """
@@ -77,7 +76,7 @@ class ParkingLotRepository:
             (id, is_new) - 停車場 ID 與是否為新增
         """
         parking_id = data["id"]
-        now = datetime.now().isoformat()
+        now = now_iso()
 
         # 檢查是否存在
         existing = self.db.fetch_one(
@@ -161,7 +160,7 @@ class ParkingLotRepository:
         if not parking_ids:
             return 0
 
-        now = datetime.now().isoformat()
+        now = now_iso()
         count = 0
 
         for parking_id in parking_ids:
@@ -237,7 +236,7 @@ class ParkingLotRepository:
         Args:
             hash_value: 雜湊值字串
         """
-        now = datetime.now().isoformat()
+        now = now_iso()
         # 使用 UPSERT 語法
         self.db.execute(
             """
