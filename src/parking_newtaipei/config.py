@@ -17,7 +17,9 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 # 資料目錄
 DATA_DIR = PROJECT_ROOT / "data"
 DB_DIR = DATA_DIR / "db"
-AVAILABILITY_DB_DIR = DATA_DIR / "availability"  # 即時車位資料庫（每月一個檔案）
+AVAILABILITY_DB_DIR = Path(
+    os.getenv("AVAILABILITY_DB_DIR", str(DATA_DIR / "availability"))
+)  # 即時車位資料庫（每月一個檔案）
 RESPONSES_DIR = DATA_DIR / "responses"
 
 # 日誌目錄
