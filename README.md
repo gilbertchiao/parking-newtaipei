@@ -93,6 +93,22 @@ uv run python -m parking_newtaipei --debug sync-parking
 
 ## 同步行為
 
+### 進程鎖保護
+
+同步命令使用 `fcntl` 檔案鎖防止重複執行：
+
+- 鎖檔案位置：`/tmp/parking_newtaipei_<command>.lock`
+- 若已有進程執行，後續執行會跳過並記錄警告
+- 進程結束（正常結束、crash、kill）時自動釋放鎖
+
+**退出碼：**
+
+| 退出碼 | 說明 |
+|--------|------|
+| 0 | 成功 |
+| 1 | 錯誤 |
+| 2 | 跳過（已有進程執行中） |
+
 ### 停車場基本資料（sync-parking）
 
 每次下載後會計算 SHA256 雜湊值，與上次同步的雜湊值比對：

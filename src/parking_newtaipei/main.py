@@ -15,6 +15,7 @@ from parking_newtaipei.config import (
     get_config_summary,
 )
 from parking_newtaipei.utils.logger import get_logger
+from parking_newtaipei.utils.process_lock import ProcessLock, ProcessLockAcquireError
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -88,7 +89,7 @@ def cmd_sync_parking(args: argparse.Namespace) -> int:
         args: 命令列參數
 
     Returns:
-        結束代碼（0 = 成功）
+        結束代碼（0 = 成功，1 = 錯誤，2 = 跳過）
     """
     from parking_newtaipei.api.client import APIClient
     from parking_newtaipei.db.connection import DatabaseConnection
@@ -104,42 +105,50 @@ def cmd_sync_parking(args: argparse.Namespace) -> int:
         logger.info("測試完成，未實際執行同步")
         return 0
 
-    logger.info("開始同步停車場資料...")
-
-    # 初始化元件
-    db = DatabaseConnection(DB_PATH)
-    api_client = APIClient(
-        base_url="",  # 使用完整 URL，不需要 base_url
-        responses_dir=RESPONSES_PATH,
-        auto_save=True,
-    )
-
+    # 取得進程鎖
+    lock = ProcessLock("sync-parking")
     try:
-        # 執行同步
-        sync = ParkingLotSync(db=db, api_client=api_client)
-        result = sync.sync(force=args.force)
+        with lock.acquire():
+            logger.info("開始同步停車場資料...")
 
-        # 檢查是否跳過
-        if result.skipped:
-            logger.info("=== 同步跳過 ===")
-            logger.info("  原因: 內容未變更")
-            return 0
+            # 初始化元件
+            db = DatabaseConnection(DB_PATH)
+            api_client = APIClient(
+                base_url="",  # 使用完整 URL，不需要 base_url
+                responses_dir=RESPONSES_PATH,
+                auto_save=True,
+            )
 
-        # 顯示結果
-        logger.info("=== 同步結果 ===")
-        logger.info(f"  新增: {result.inserted}")
-        logger.info(f"  更新: {result.updated}")
-        logger.info(f"  刪除: {result.deleted}")
-        logger.info(f"  總處理: {result.total_processed}")
+            try:
+                # 執行同步
+                sync = ParkingLotSync(db=db, api_client=api_client)
+                result = sync.sync(force=args.force)
 
-        if result.errors:
-            logger.warning(f"  錯誤數: {len(result.errors)}")
-            return 1
+                # 檢查是否跳過
+                if result.skipped:
+                    logger.info("=== 同步跳過 ===")
+                    logger.info("  原因: 內容未變更")
+                    return 0
 
-        return 0
+                # 顯示結果
+                logger.info("=== 同步結果 ===")
+                logger.info(f"  新增: {result.inserted}")
+                logger.info(f"  更新: {result.updated}")
+                logger.info(f"  刪除: {result.deleted}")
+                logger.info(f"  總處理: {result.total_processed}")
 
-    finally:
-        api_client.close()
+                if result.errors:
+                    logger.warning(f"  錯誤數: {len(result.errors)}")
+                    return 1
+
+                return 0
+
+            finally:
+                api_client.close()
+
+    except ProcessLockAcquireError:
+        logger.warning("跳過執行：已有進程正在執行 sync-parking")
+        return 2
 
 
 def cmd_sync_availability(args: argparse.Namespace) -> int:
@@ -149,7 +158,7 @@ def cmd_sync_availability(args: argparse.Namespace) -> int:
         args: 命令列參數
 
     Returns:
-        結束代碼（0 = 成功）
+        結束代碼（0 = 成功，1 = 錯誤，2 = 跳過）
     """
     from parking_newtaipei.api.client import APIClient
     from parking_newtaipei.db.availability import get_monthly_db_path
@@ -166,34 +175,42 @@ def cmd_sync_availability(args: argparse.Namespace) -> int:
         logger.info("測試完成，未實際執行同步")
         return 0
 
-    logger.info("開始同步即時車位資料...")
-
-    # 初始化元件
-    api_client = APIClient(
-        base_url="",
-        responses_dir=RESPONSES_PATH,
-        auto_save=True,
-    )
-
+    # 取得進程鎖
+    lock = ProcessLock("sync-availability")
     try:
-        # 執行同步
-        sync = AvailabilitySync(db_dir=AVAILABILITY_DB_DIR, api_client=api_client)
-        result = sync.sync()
+        with lock.acquire():
+            logger.info("開始同步即時車位資料...")
 
-        # 顯示結果
-        logger.info("=== 同步結果 ===")
-        logger.info(f"  寫入: {result.inserted}")
-        logger.info(f"  跳過無效: {result.skipped_invalid}")
-        logger.info(f"  總下載: {result.total_downloaded}")
+            # 初始化元件
+            api_client = APIClient(
+                base_url="",
+                responses_dir=RESPONSES_PATH,
+                auto_save=True,
+            )
 
-        if result.errors:
-            logger.warning(f"  錯誤數: {len(result.errors)}")
-            return 1
+            try:
+                # 執行同步
+                sync = AvailabilitySync(db_dir=AVAILABILITY_DB_DIR, api_client=api_client)
+                result = sync.sync()
 
-        return 0
+                # 顯示結果
+                logger.info("=== 同步結果 ===")
+                logger.info(f"  寫入: {result.inserted}")
+                logger.info(f"  跳過無效: {result.skipped_invalid}")
+                logger.info(f"  總下載: {result.total_downloaded}")
 
-    finally:
-        api_client.close()
+                if result.errors:
+                    logger.warning(f"  錯誤數: {len(result.errors)}")
+                    return 1
+
+                return 0
+
+            finally:
+                api_client.close()
+
+    except ProcessLockAcquireError:
+        logger.warning("跳過執行：已有進程正在執行 sync-availability")
+        return 2
 
 
 def cmd_availability_stats(args: argparse.Namespace) -> int:
