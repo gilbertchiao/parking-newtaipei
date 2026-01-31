@@ -4,9 +4,10 @@
 
 ## 資料來源
 
-- [新北市路外公共停車場資訊](https://data.gov.tw/dataset/122955)
-- 資料格式：CSV
-- 更新頻率：不定期
+| 資料集 | 更新頻率 | 說明 |
+|--------|----------|------|
+| [路外公共停車場資訊](https://data.gov.tw/dataset/122955) | 每日 | 停車場基本資料 |
+| [即時剩餘車位數](https://data.gov.tw/dataset/122902) | 每 5 分鐘 | 即時車位資料 |
 
 ## 環境需求
 
@@ -50,7 +51,7 @@ LOG_LEVEL=INFO
 uv run python -m parking_newtaipei --help
 ```
 
-### 同步停車場資料
+### 同步停車場基本資料（每日）
 
 ```bash
 # 實際執行（自動檢查內容是否變更）
@@ -63,10 +64,24 @@ uv run python -m parking_newtaipei sync-parking --force
 uv run python -m parking_newtaipei sync-parking --dry-run
 ```
 
+### 同步即時車位資料（每 5 分鐘）
+
+```bash
+# 實際執行
+uv run python -m parking_newtaipei sync-availability
+
+# 測試模式
+uv run python -m parking_newtaipei sync-availability --dry-run
+```
+
 ### 查看統計資訊
 
 ```bash
+# 停車場基本資料統計
 uv run python -m parking_newtaipei stats
+
+# 即時車位資料統計
+uv run python -m parking_newtaipei availability-stats
 ```
 
 ### 除錯模式
@@ -77,14 +92,12 @@ uv run python -m parking_newtaipei --debug sync-parking
 
 ## 同步行為
 
-### 內容變更檢查
+### 停車場基本資料（sync-parking）
 
 每次下載後會計算 SHA256 雜湊值，與上次同步的雜湊值比對：
 - **雜湊相同** + 資料表非空 → 跳過同步，避免不必要的資料庫操作
 - **雜湊不同** 或 資料表為空 → 執行完整同步
 - 使用 `--force` 可強制同步，忽略雜湊檢查
-
-### 資料處理邏輯
 
 | 情況 | 處理方式 |
 |------|----------|
@@ -93,9 +106,17 @@ uv run python -m parking_newtaipei --debug sync-parking
 | API 無、DB 有 | 標記 `deleted_at`（軟刪除） |
 | 已標記刪除 | 不重複更新刪除時間 |
 
+### 即時車位資料（sync-availability）
+
+- 每次執行直接寫入資料庫，記錄時間序列
+- `AVAILABLECAR = -9` 視為無效資料，不寫入
+- 每月一個資料庫檔案（`availability_YYYYMM.db`），避免單檔過大
+
 ## 資料庫結構
 
-停車場資料表 `parking_lots`：
+### 停車場基本資料 `data/db/parking.db`
+
+**parking_lots 表：**
 
 | 欄位 | 類型 | 說明 |
 |------|------|------|
@@ -117,6 +138,17 @@ uv run python -m parking_newtaipei --debug sync-parking
 | updated_at | TEXT | 更新時間 |
 | deleted_at | TEXT | 刪除時間（軟刪除） |
 
+### 即時車位資料 `data/availability/availability_YYYYMM.db`
+
+**availability 表：**
+
+| 欄位 | 類型 | 說明 |
+|------|------|------|
+| id | INTEGER | 自動遞增主鍵 |
+| parking_id | TEXT | 停車場編號 |
+| available_car | INTEGER | 剩餘車位數 |
+| recorded_at | TEXT | 記錄時間 |
+
 ## 目錄結構
 
 ```
@@ -127,7 +159,8 @@ parking-newtaipei/
 │   ├── etl/                 # ETL 模組
 │   └── utils/               # 工具模組
 ├── data/
-│   ├── db/                  # SQLite 資料庫
+│   ├── db/                  # 停車場基本資料庫
+│   ├── availability/        # 即時車位資料庫（每月一檔）
 │   └── responses/           # API response 備份（.json.gz）
 ├── logs/                    # 執行日誌
 ├── scripts/                 # 部署腳本
@@ -137,11 +170,14 @@ parking-newtaipei/
 
 ## 定時執行（Cron）
 
-參考 `scripts/crontab.example` 設定每日執行：
+參考 `scripts/crontab.example`：
 
 ```cron
-# 每日凌晨 2 點同步停車場資料
-0 2 * * * cd /path/to/parking-newtaipei && /path/to/.venv/bin/python -m parking_newtaipei sync-parking
+# 每 5 分鐘同步即時剩餘車位資料
+*/5 * * * * cd /path/to/parking-newtaipei && .venv/bin/python -m parking_newtaipei sync-availability
+
+# 每日凌晨 2 點同步停車場基本資料
+0 2 * * * cd /path/to/parking-newtaipei && .venv/bin/python -m parking_newtaipei sync-parking
 ```
 
 ## 開發

@@ -8,6 +8,7 @@ import sys
 
 from parking_newtaipei import __version__
 from parking_newtaipei.config import (
+    AVAILABILITY_DB_DIR,
     DB_PATH,
     RESPONSES_PATH,
     ensure_directories,
@@ -54,10 +55,27 @@ def create_parser() -> argparse.ArgumentParser:
         help="強制同步，忽略內容雜湊檢查",
     )
 
+    # sync-availability 指令
+    avail_parser = subparsers.add_parser(
+        "sync-availability",
+        help="同步即時剩餘車位資料（每 5 分鐘）",
+    )
+    avail_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="測試模式，顯示設定但不實際執行",
+    )
+
     # stats 指令
     subparsers.add_parser(
         "stats",
-        help="顯示資料庫統計資訊",
+        help="顯示停車場資料庫統計資訊",
+    )
+
+    # availability-stats 指令
+    subparsers.add_parser(
+        "availability-stats",
+        help="顯示即時車位資料庫統計資訊",
     )
 
     return parser
@@ -124,6 +142,101 @@ def cmd_sync_parking(args: argparse.Namespace) -> int:
         api_client.close()
 
 
+def cmd_sync_availability(args: argparse.Namespace) -> int:
+    """執行即時車位資料同步
+
+    Args:
+        args: 命令列參數
+
+    Returns:
+        結束代碼（0 = 成功）
+    """
+    from parking_newtaipei.api.client import APIClient
+    from parking_newtaipei.db.availability import get_monthly_db_path
+    from parking_newtaipei.etl.availability_sync import AVAILABILITY_API_URL, AvailabilitySync
+
+    logger = get_logger()
+
+    if args.dry_run:
+        logger.info("=== Dry Run 模式 ===")
+        logger.info(f"API URL: {AVAILABILITY_API_URL}")
+        logger.info(f"資料庫目錄: {AVAILABILITY_DB_DIR}")
+        logger.info(f"當月資料庫: {get_monthly_db_path(AVAILABILITY_DB_DIR)}")
+        logger.info(f"Response 備份目錄: {RESPONSES_PATH}")
+        logger.info("測試完成，未實際執行同步")
+        return 0
+
+    logger.info("開始同步即時車位資料...")
+
+    # 初始化元件
+    api_client = APIClient(
+        base_url="",
+        responses_dir=RESPONSES_PATH,
+        auto_save=True,
+    )
+
+    try:
+        # 執行同步
+        sync = AvailabilitySync(db_dir=AVAILABILITY_DB_DIR, api_client=api_client)
+        result = sync.sync()
+
+        # 顯示結果
+        logger.info("=== 同步結果 ===")
+        logger.info(f"  寫入: {result.inserted}")
+        logger.info(f"  跳過無效: {result.skipped_invalid}")
+        logger.info(f"  總下載: {result.total_downloaded}")
+
+        if result.errors:
+            logger.warning(f"  錯誤數: {len(result.errors)}")
+            return 1
+
+        return 0
+
+    finally:
+        api_client.close()
+
+
+def cmd_availability_stats(args: argparse.Namespace) -> int:
+    """顯示即時車位資料庫統計資訊
+
+    Args:
+        args: 命令列參數
+
+    Returns:
+        結束代碼（0 = 成功）
+    """
+    from parking_newtaipei.db.availability import AvailabilityRepository
+
+    logger = get_logger()
+
+    repo = AvailabilityRepository(AVAILABILITY_DB_DIR)
+    db_files = repo.list_db_files()
+
+    if not db_files:
+        logger.warning(f"資料庫目錄無檔案: {AVAILABILITY_DB_DIR}")
+        logger.info("請先執行 sync-availability 指令建立資料庫")
+        return 0
+
+    logger.info("=== 即時車位資料庫統計 ===")
+
+    for db_file in db_files:
+        # 從檔名解析年月
+        name = db_file.stem  # availability_YYYYMM
+        year = int(name[-6:-2])
+        month = int(name[-2:])
+
+        stats = repo.get_stats(year, month)
+        logger.info(f"  [{stats['db_file']}]")
+        logger.info(f"    總筆數: {stats['total_records']:,}")
+        logger.info(f"    停車場數: {stats['unique_parking_ids']}")
+        if stats['first_record']:
+            logger.info(f"    首筆時間: {stats['first_record']}")
+        if stats['last_record']:
+            logger.info(f"    末筆時間: {stats['last_record']}")
+
+    return 0
+
+
 def cmd_stats(args: argparse.Namespace) -> int:
     """顯示資料庫統計資訊
 
@@ -179,8 +292,12 @@ def main() -> int:
     # 執行對應指令
     if args.command == "sync-parking":
         return cmd_sync_parking(args)
+    elif args.command == "sync-availability":
+        return cmd_sync_availability(args)
     elif args.command == "stats":
         return cmd_stats(args)
+    elif args.command == "availability-stats":
+        return cmd_availability_stats(args)
 
     # 無指令時顯示說明
     parser.print_help()

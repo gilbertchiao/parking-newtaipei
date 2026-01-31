@@ -7,8 +7,12 @@
 # 或使用 crontab 指令直接載入：
 # crontab scripts/crontab.example
 
-# 每日凌晨 2 點同步路外公共停車場資料
+# 每 5 分鐘同步即時剩餘車位資料
+*/5 * * * * cd /path/to/parking-newtaipei && /path/to/parking-newtaipei/.venv/bin/python -m parking_newtaipei sync-availability >> /dev/null 2>&1
+
+# 每日凌晨 2 點同步路外公共停車場基本資料
 0 2 * * * cd /path/to/parking-newtaipei && /path/to/parking-newtaipei/.venv/bin/python -m parking_newtaipei sync-parking >> /dev/null 2>&1
 
 # 若需要保留 cron 執行日誌，可改用：
+# */5 * * * * cd /path/to/parking-newtaipei && /path/to/parking-newtaipei/.venv/bin/python -m parking_newtaipei sync-availability >> /path/to/parking-newtaipei/logs/cron.log 2>&1
 # 0 2 * * * cd /path/to/parking-newtaipei && /path/to/parking-newtaipei/.venv/bin/python -m parking_newtaipei sync-parking >> /path/to/parking-newtaipei/logs/cron.log 2>&1
