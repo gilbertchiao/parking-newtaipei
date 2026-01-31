@@ -1,0 +1,72 @@
+# baseURI: https://data.gov.tw/dataset/8572
+
+@prefix cld: <http://purl.org/cld/terms/> .
+@prefix dgt: <https://data.gov.tw/dataset/> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix dctype: <http://purl.org/dc/dcmitype/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix mime: <https://www.iana.org/assignments/media-types/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix proj: <http://www.w3.org/ns/project#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix time: <http://www.w3.org/2006/time#> .
+@prefix v: <http://www.w3.org/2006/vcard/ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix schema: <http://schema.org/> .
+@prefix dqv: <http://www.w3.org/ns/dqv#> .
+
+dgt:CR122955
+  a dcat:CatalogRecord ;
+  dcterms:title "新北市路外公共停車場資訊"@zh ;
+  dcterms:description ""@zh ;
+  dcterms:issued "2013-05-06"^^xsd:date ;
+  dcterms:modified "2023-06-02T10:36:58"^^xsd:dateTime ;
+  foaf:primaryTopic dgt:122955 ;
+.
+
+dgt:122955
+  a dcat:Dataset ;
+  dcterms:title "新北市路外公共停車場資訊"@zh ;
+  dcterms:description ""@zh ;
+  dcterms:description "ID、AREA、NAME、TYPE、SUMMARY、ADDRESS、TEL、PAYEX、SERVICETIME、TW97X、TW97Y、TOTALCAR、TOTALMOTOR、TOTALBIKE"@zh ;
+  dcterms:identifier "https://cms.data.gov.tw/dataset/122955"^^dcterms:URI;
+  dcterms:issued "2013-05-06"^^xsd:date ;
+  dcterms:license <http://data.gov.tw/license> ;
+  dcterms:publisher [ rdfs:label "新北市政府交通局"@zh ];
+  dcat:contactPoint [ rdfs:label "張先生 (8607)"@zh ];
+  dcterms:accrualPeriodity <http://purl.org/cld/freq/Irregular>;
+  dcat:theme [ rdfs:label "交通及通訊"@zh ];
+  dcat:keyword "生活、停車"@zh;
+  schema:offers [ a schema:Offer;  rdfs:label "免費"@zh;  schema:price "0"^^xsd:nonNegativeInteger; schema:priceCurrency "TWD"^^xsd:string ];
+  dcat:landingPage <https://cms.data.gov.tw/dataset/122955>;
+  rdfs:comment "授權說明網址: http://data.gov.tw/license"@zh;
+  dcterms:relation dgt:125781 ;
+  dcterms:relation dgt:122902 ;
+  dcterms:relation dgt:124992 ;
+  dcterms:relation dgt:123030 ;
+  dcterms:relation dgt:123715 ;
+  dcat:distribution <https://data.ntpc.gov.tw/api/datasets/b1464ef0-9c7c-4a6f-abf7-6bdf32847e68/csv/file> ;
+.
+
+<https://data.ntpc.gov.tw/api/datasets/b1464ef0-9c7c-4a6f-abf7-6bdf32847e68/csv/file>
+  a dcat:Distribution;
+  dcterms:description "ID、AREA、NAME、TYPE、SUMMARY、ADDRESS、TEL、PAYEX、SERVICETIME、TW97X、TW97Y、TOTALCAR、TOTALMOTOR、TOTALBIKE"@zh ;
+  dcterms:description "新北市路外公共停車場資訊"@zh ;
+  dcterms:description ""@zh ;
+  rdfs:comment "新北市路外公共停車場資訊"@zh ;
+  schema:encodingFormat "UTF-8"@zh ;
+  dcat:byteSize "1247"^^xsd:nonNegativeInteger;
+  dgt:resourceQualityCheckTime ""^^xsd:dateTime;
+  dcat:downloadURL <https://data.ntpc.gov.tw/api/datasets/b1464ef0-9c7c-4a6f-abf7-6bdf32847e68/csv/file>;
+  rdf:comment ""@zh;
+.
+
+<http://data.gov.tw/license> rdfs:label "政府資料開放授權條款-第1版"@zh .
+<http://purl.org/cld/freq/Irregular>
+a cld:Frequency;
+  rdfs:label "不定期更新"@zh;
+.
