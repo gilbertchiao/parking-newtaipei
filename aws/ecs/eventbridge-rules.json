@@ -1,0 +1,72 @@
+{
+  "description": "EventBridge 排程規則範例，用於觸發 ECS Scheduled Tasks",
+  "rules": [
+    {
+      "name": "parking-sync-availability",
+      "description": "每 5 分鐘同步即時車位資料",
+      "scheduleExpression": "rate(5 minutes)",
+      "state": "ENABLED",
+      "targets": [
+        {
+          "id": "sync-availability-target",
+          "arn": "arn:aws:ecs:ap-northeast-1:ACCOUNT_ID:cluster/parking-cluster",
+          "roleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsEventsRole",
+          "ecsParameters": {
+            "taskDefinitionArn": "arn:aws:ecs:ap-northeast-1:ACCOUNT_ID:task-definition/parking-etl-scheduled",
+            "taskCount": 1,
+            "launchType": "FARGATE",
+            "platformVersion": "LATEST",
+            "networkConfiguration": {
+              "awsvpcConfiguration": {
+                "subnets": ["subnet-XXXXXXXXX"],
+                "securityGroups": ["sg-XXXXXXXXX"],
+                "assignPublicIp": "ENABLED"
+              }
+            }
+          },
+          "input": "{\"containerOverrides\":[{\"name\":\"parking-etl\",\"command\":[\"sync-availability\"]}]}"
+        }
+      ]
+    },
+    {
+      "name": "parking-sync-parking",
+      "description": "每天凌晨 2 點（UTC+8）同步停車場基本資料",
+      "scheduleExpression": "cron(0 18 * * ? *)",
+      "scheduleExpressionTimezone": "UTC",
+      "note": "UTC 18:00 = UTC+8 02:00（台北時間凌晨 2 點）",
+      "state": "ENABLED",
+      "targets": [
+        {
+          "id": "sync-parking-target",
+          "arn": "arn:aws:ecs:ap-northeast-1:ACCOUNT_ID:cluster/parking-cluster",
+          "roleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsEventsRole",
+          "ecsParameters": {
+            "taskDefinitionArn": "arn:aws:ecs:ap-northeast-1:ACCOUNT_ID:task-definition/parking-etl-scheduled",
+            "taskCount": 1,
+            "launchType": "FARGATE",
+            "platformVersion": "LATEST",
+            "networkConfiguration": {
+              "awsvpcConfiguration": {
+                "subnets": ["subnet-XXXXXXXXX"],
+                "securityGroups": ["sg-XXXXXXXXX"],
+                "assignPublicIp": "ENABLED"
+              }
+            }
+          },
+          "input": "{\"containerOverrides\":[{\"name\":\"parking-etl\",\"command\":[\"sync-parking\"]}]}"
+        }
+      ]
+    }
+  ],
+  "placeholders": {
+    "ACCOUNT_ID": "您的 AWS 帳號 ID（12 位數字）",
+    "subnet-XXXXXXXXX": "您的 VPC Subnet ID",
+    "sg-XXXXXXXXX": "您的 Security Group ID"
+  },
+  "cli_commands": {
+    "create_rule": "aws events put-rule --name <rule-name> --schedule-expression <expression> --state ENABLED",
+    "add_target": "aws events put-targets --rule <rule-name> --targets file://target.json",
+    "list_rules": "aws events list-rules --name-prefix parking-",
+    "disable_rule": "aws events disable-rule --name <rule-name>"
+  }
+}

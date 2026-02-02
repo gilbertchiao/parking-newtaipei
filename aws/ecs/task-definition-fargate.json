@@ -1,0 +1,98 @@
+{
+  "family": "parking-etl-fargate",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "parking-etl",
+      "image": "ACCOUNT_ID.dkr.ecr.ap-northeast-1.amazonaws.com/parking-newtaipei:latest",
+      "essential": true,
+      "environment": [
+        {
+          "name": "LOG_LEVEL",
+          "value": "INFO"
+        },
+        {
+          "name": "LOG_BACKUP_DAYS",
+          "value": "30"
+        },
+        {
+          "name": "TZ",
+          "value": "Asia/Taipei"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "parking-data",
+          "containerPath": "/app/data",
+          "readOnly": false
+        },
+        {
+          "sourceVolume": "parking-logs",
+          "containerPath": "/app/logs",
+          "readOnly": false
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/parking-etl",
+          "awslogs-region": "ap-northeast-1",
+          "awslogs-stream-prefix": "fargate",
+          "awslogs-create-group": "true"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "python -m parking_newtaipei stats || exit 1"],
+        "interval": 60,
+        "timeout": 10,
+        "retries": 3,
+        "startPeriod": 30
+      }
+    }
+  ],
+  "volumes": [
+    {
+      "name": "parking-data",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "fs-XXXXXXXXX",
+        "rootDirectory": "/parking-data",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": {
+          "accessPointId": "fsap-XXXXXXXXX",
+          "iam": "ENABLED"
+        }
+      }
+    },
+    {
+      "name": "parking-logs",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "fs-XXXXXXXXX",
+        "rootDirectory": "/parking-logs",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": {
+          "accessPointId": "fsap-YYYYYYYYY",
+          "iam": "ENABLED"
+        }
+      }
+    }
+  ],
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "tags": [
+    {
+      "key": "Project",
+      "value": "parking-newtaipei"
+    },
+    {
+      "key": "Environment",
+      "value": "production"
+    }
+  ]
+}

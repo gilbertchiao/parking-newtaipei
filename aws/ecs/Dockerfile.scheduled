@@ -1,0 +1,48 @@
+# Scheduled Tasks 專用 Dockerfile
+# 輕量版，不含 cron，執行完畢後退出
+
+# Stage 1: Builder - 使用 uv 安裝依賴
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
+
+WORKDIR /app
+
+# 複製依賴定義檔案（包含 README.md 供 hatchling 建構）
+COPY pyproject.toml uv.lock README.md ./
+
+# 安裝依賴到虛擬環境
+RUN uv sync --frozen --no-dev --no-install-project
+
+# 複製原始碼
+COPY src/ ./src/
+
+# 安裝專案本身
+RUN uv sync --frozen --no-dev
+
+
+# Stage 2: Runtime - 輕量執行環境（不含 cron）
+FROM python:3.12-slim-bookworm
+
+WORKDIR /app
+
+# 從 builder 複製虛擬環境
+COPY --from=builder /app/.venv /app/.venv
+
+# 複製原始碼
+COPY src/ ./src/
+
+# 建立資料與日誌目錄
+RUN mkdir -p /app/data /app/logs
+
+# 設定環境變數
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PROJECT_ROOT=/app \
+    DATA_DIR=/app/data \
+    LOGS_DIR=/app/logs \
+    LOG_LEVEL=INFO \
+    TZ=Asia/Taipei
+
+# 預設執行 --help，實際命令由 ECS Task Definition 覆蓋
+ENTRYPOINT ["python", "-m", "parking_newtaipei"]
+CMD ["--help"]

@@ -259,6 +259,41 @@ docker compose down -v
 
 詳細說明請參考 [docs/DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md)。
 
+### 方式三：AWS ECS Fargate 常駐
+
+使用現有 Dockerfile 部署到 AWS ECS Fargate，容器內 cron 處理排程：
+
+```bash
+# 建構並推送映像到 ECR
+docker build -t parking-newtaipei:latest .
+docker tag parking-newtaipei:latest $ECR_URI:latest
+docker push $ECR_URI:latest
+
+# 建立 ECS Service
+aws ecs create-service \
+    --cluster parking-cluster \
+    --service-name parking-etl-service \
+    --task-definition parking-etl-fargate \
+    --desired-count 1 \
+    --launch-type FARGATE
+```
+
+### 方式四：AWS ECS Scheduled Tasks
+
+使用 EventBridge 排程觸發 ECS Task，按執行次數計費：
+
+```bash
+# 建構並推送 scheduled 版本映像
+docker build -f aws/ecs/Dockerfile.scheduled -t parking-newtaipei:scheduled .
+docker push $ECR_URI:scheduled
+
+# 建立 EventBridge 排程規則
+aws events put-rule --name parking-sync-availability --schedule-expression "rate(5 minutes)"
+aws events put-rule --name parking-sync-parking --schedule-expression "cron(0 18 * * ? *)"
+```
+
+詳細說明請參考 [docs/AWS_ECS_DEPLOYMENT.md](docs/AWS_ECS_DEPLOYMENT.md)。
+
 ## 開發
 
 ### 執行測試
