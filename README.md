@@ -176,6 +176,9 @@ parking-newtaipei/
 │   ├── db/                  # 資料庫模組
 │   ├── etl/                 # ETL 模組
 │   └── utils/               # 工具模組
+├── docker/                  # Docker 相關檔案
+│   ├── crontab              # Cron 排程設定
+│   └── entrypoint.sh        # 容器進入點腳本
 ├── data/
 │   ├── db/                  # 停車場基本資料庫
 │   ├── availability/        # 即時車位資料庫（每月一檔）
@@ -183,10 +186,14 @@ parking-newtaipei/
 ├── logs/                    # 執行日誌
 ├── scripts/                 # 部署腳本
 ├── tests/                   # 測試
-└── docs/                    # 文件
+├── docs/                    # 文件
+├── Dockerfile               # Docker 映像建構檔
+└── docker-compose.yml       # Docker Compose 設定
 ```
 
-## 定時執行（Cron）
+## 部署方式
+
+### 方式一：本機 Cron
 
 參考 `scripts/crontab.example`：
 
@@ -197,6 +204,60 @@ parking-newtaipei/
 # 每日凌晨 2 點同步停車場基本資料
 0 2 * * * cd /path/to/parking-newtaipei && .venv/bin/python -m parking_newtaipei sync-parking
 ```
+
+### 方式二：Docker 部署
+
+使用 Docker Compose 快速部署，內建 Cron 排程自動執行同步任務。
+
+#### 啟動服務
+
+```bash
+# 建立並啟動（首次啟動會自動同步停車場資料）
+docker compose up -d
+
+# 檢視容器狀態
+docker compose ps
+
+# 檢視日誌
+docker compose logs -f
+```
+
+#### 手動操作
+
+```bash
+# 同步停車場基本資料
+docker compose exec parking-etl python -m parking_newtaipei sync-parking
+
+# 同步即時車位資料
+docker compose exec parking-etl python -m parking_newtaipei sync-availability
+
+# 查看統計資訊
+docker compose exec parking-etl python -m parking_newtaipei stats
+
+# 查看 Cron 執行紀錄
+docker compose exec parking-etl cat /app/logs/cron.log
+```
+
+#### 停止服務
+
+```bash
+# 停止（保留資料）
+docker compose down
+
+# 停止並刪除資料
+docker compose down -v
+```
+
+#### 環境變數
+
+| 變數名稱 | 預設值 | 說明 |
+|---------|--------|------|
+| `API_BASE_URL` | (選填) | API 基礎 URL |
+| `LOG_LEVEL` | `INFO` | 日誌等級 |
+| `LOG_BACKUP_DAYS` | `30` | 日誌保留天數 |
+| `TZ` | `Asia/Taipei` | 時區設定 |
+
+詳細說明請參考 [docs/DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md)。
 
 ## 開發
 
