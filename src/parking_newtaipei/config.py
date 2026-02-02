@@ -11,19 +11,19 @@ from dotenv import load_dotenv
 # 載入 .env 檔案
 load_dotenv()
 
-# 專案根目錄（config.py 位於 src/parking_newtaipei/，往上 3 層即為專案根目錄）
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+# 專案根目錄（支援環境變數覆蓋，用於 Docker 環境）
+PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", str(Path(__file__).parent.parent.parent)))
 
-# 資料目錄
-DATA_DIR = PROJECT_ROOT / "data"
+# 資料目錄（支援環境變數覆蓋）
+DATA_DIR = Path(os.getenv("DATA_DIR", str(PROJECT_ROOT / "data")))
 DB_DIR = DATA_DIR / "db"
 AVAILABILITY_DB_DIR = Path(
     os.getenv("AVAILABILITY_DB_DIR", str(DATA_DIR / "availability"))
 )  # 即時車位資料庫（每月一個檔案）
 RESPONSES_DIR = DATA_DIR / "responses"
 
-# 日誌目錄
-LOGS_DIR = PROJECT_ROOT / "logs"
+# 日誌目錄（支援環境變數覆蓋）
+LOGS_DIR = Path(os.getenv("LOGS_DIR", str(PROJECT_ROOT / "logs")))
 
 # 環境變數設定
 API_BASE_URL = os.getenv("API_BASE_URL", "")

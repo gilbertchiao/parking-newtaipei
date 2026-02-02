@@ -1,0 +1,9 @@
+# 新北市停車場 ETL 排程任務
+#
+# 每 5 分鐘同步即時車位資料
+*/5 * * * * cd /app && /app/.venv/bin/python -m parking_newtaipei sync-availability >> /app/logs/cron.log 2>&1
+
+# 每天凌晨 2 點同步停車場基本資料
+0 2 * * * cd /app && /app/.venv/bin/python -m parking_newtaipei sync-parking >> /app/logs/cron.log 2>&1
+
+# crontab 需要空行結尾

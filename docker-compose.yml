@@ -1,0 +1,21 @@
+services:
+  parking-etl:
+    build: .
+    container_name: parking-etl
+    restart: unless-stopped
+    environment:
+      - API_BASE_URL=${API_BASE_URL}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_BACKUP_DAYS=${LOG_BACKUP_DAYS:-30}
+      - TZ=${TZ:-Asia/Taipei}
+    volumes:
+      - parking-data:/app/data
+      - parking-logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+volumes:
+  parking-data:
+  parking-logs:

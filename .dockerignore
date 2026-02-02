@@ -1,0 +1,49 @@
+# Git
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+
+# 虛擬環境
+.venv/
+venv/
+ENV/
+
+# 資料目錄（使用 volumes 掛載）
+data/
+logs/
+
+# 測試
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 環境變數檔案
+.env
+.env.*
+
+# 文件（保留 README.md 供 hatchling 建構）
+docs/
+
+# Claude Code
+.claude/
+
+# 其他
+.DS_Store
+Thumbs.db
+.uv/
