@@ -182,7 +182,7 @@ parking-newtaipei/
 ├── data/
 │   ├── db/                  # 停車場基本資料庫
 │   ├── availability/        # 即時車位資料庫（每月一檔）
-│   └── responses/           # API response 備份（.json.gz）
+│   └── responses/           # API response 備份（.json.gz，按 YYYYMM 分目錄）
 ├── logs/                    # 執行日誌
 ├── scripts/                 # 部署腳本
 ├── tests/                   # 測試

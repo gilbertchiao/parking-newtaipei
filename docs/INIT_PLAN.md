@@ -28,7 +28,7 @@ parking-newtaipei/
 ├── data/
 │   ├── db/                          # SQLite 資料庫
 │   │   └── .gitkeep
-│   └── responses/                   # API request/response 備份（.json.gz）
+│   └── responses/                   # API request/response 備份（.json.gz，按 YYYYMM 分目錄）
 │       └── .gitkeep
 ├── logs/                            # 執行日誌
 │   └── .gitkeep
@@ -95,7 +95,7 @@ dev = [
 # 每次呼叫 API 時自動保存：
 # 1. 建立唯一檔名：{timestamp}_{endpoint_hash}.json.gz
 # 2. 記錄內容：{"request": {...}, "response": {...}, "timestamp": "..."}
-# 3. 使用 gzip 壓縮後存入 data/responses/
+# 3. 使用 gzip 壓縮後存入 data/responses/{YYYYMM}/（依呼叫時間分目錄）
 ```
 
 ### Logger 設定
