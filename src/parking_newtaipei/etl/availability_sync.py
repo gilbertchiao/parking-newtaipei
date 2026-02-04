@@ -9,7 +9,9 @@ from io import StringIO
 from pathlib import Path
 
 from parking_newtaipei.api.client import APIClient
+from parking_newtaipei.config import HEALTHCHECK_AVAILABILITY_URL
 from parking_newtaipei.db.availability import AvailabilityRepository
+from parking_newtaipei.utils.healthcheck import ping_healthcheck
 from parking_newtaipei.utils.logger import get_logger
 
 # 新北市公有路外停車場即時賸餘車位數 API
@@ -157,5 +159,8 @@ class AvailabilitySync:
 
         if result.errors:
             self.logger.warning(f"同步過程中發生 {len(result.errors)} 個錯誤")
+        else:
+            # 同步成功，發送 healthcheck 通報
+            ping_healthcheck(HEALTHCHECK_AVAILABILITY_URL, "即時車位資料同步")
 
         return result

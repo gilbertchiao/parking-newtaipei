@@ -35,6 +35,10 @@ RESPONSES_PATH = Path(os.getenv("RESPONSES_PATH", str(RESPONSES_DIR)))
 LOG_FILE = LOGS_DIR / "app.log"
 LOG_BACKUP_DAYS = int(os.getenv("LOG_BACKUP_DAYS", "90"))  # 日誌保留天數
 
+# Healthcheck 設定（選填，未設定則不通報）
+HEALTHCHECK_PARKING_URL = os.getenv("HEALTHCHECK_PARKING_URL", "")
+HEALTHCHECK_AVAILABILITY_URL = os.getenv("HEALTHCHECK_AVAILABILITY_URL", "")
+
 
 def ensure_directories() -> None:
     """確保所有必要目錄存在"""
@@ -53,4 +57,6 @@ def get_config_summary() -> dict:
         "responses_path": str(RESPONSES_PATH),
         "log_file": str(LOG_FILE),
         "log_backup_days": LOG_BACKUP_DAYS,
+        "healthcheck_parking_url": HEALTHCHECK_PARKING_URL or "(未設定)",
+        "healthcheck_availability_url": HEALTHCHECK_AVAILABILITY_URL or "(未設定)",
     }

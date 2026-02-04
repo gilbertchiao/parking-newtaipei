@@ -43,6 +43,10 @@ LOG_LEVEL=INFO
 # DB_PATH=data/db/parking.db
 # AVAILABILITY_DB_DIR=data/availability/
 # RESPONSES_PATH=data/responses/
+
+# Healthcheck 通報 URL（選填，未設定則不通報）
+# HEALTHCHECK_PARKING_URL=https://hc-ping.com/your-parking-uuid
+# HEALTHCHECK_AVAILABILITY_URL=https://hc-ping.com/your-availability-uuid
 ```
 
 ## 使用方式
@@ -129,6 +133,15 @@ uv run python -m parking_newtaipei --debug sync-parking
 - 每次執行直接寫入資料庫，記錄時間序列
 - `AVAILABLECAR = -9` 視為無效資料，不寫入
 - 每月一個資料庫檔案（`availability_YYYYMM.db`），避免單檔過大
+
+### Healthcheck 通報
+
+同步成功後可自動 ping 指定的 URL，用於監控服務健康狀態（如 [healthchecks.io](https://healthchecks.io/)）：
+
+- 設定 `HEALTHCHECK_PARKING_URL`：停車場基本資料同步成功時通報
+- 設定 `HEALTHCHECK_AVAILABILITY_URL`：即時車位資料同步成功時通報
+- 未設定則不通報（預設行為）
+- 通報失敗只記錄警告，不影響同步結果
 
 ## 資料庫結構
 
@@ -256,6 +269,8 @@ docker compose down -v
 | `LOG_LEVEL` | `INFO` | 日誌等級 |
 | `LOG_BACKUP_DAYS` | `30` | 日誌保留天數 |
 | `TZ` | `Asia/Taipei` | 時區設定 |
+| `HEALTHCHECK_PARKING_URL` | (選填) | 停車場基本資料同步成功通報 URL |
+| `HEALTHCHECK_AVAILABILITY_URL` | (選填) | 即時車位資料同步成功通報 URL |
 
 詳細說明請參考 [docs/DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md)。
 
