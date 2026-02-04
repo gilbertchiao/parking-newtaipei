@@ -40,7 +40,7 @@ data/db/*.db
 data/db/*.sqlite
 data/db/*.sqlite3
 data/availability/*.db
-data/responses/*.json.gz
+data/responses/**/*.json.gz
 logs/*.log
 
 # OS

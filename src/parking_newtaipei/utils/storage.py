@@ -49,10 +49,16 @@ def save_response(
     Returns:
         儲存的檔案路徑
     """
-    output_dir.mkdir(parents=True, exist_ok=True)
+    if timestamp is None:
+        timestamp = datetime.now()
+
+    # 建立 YYYYMM 子目錄
+    month_subdir = timestamp.strftime("%Y%m")
+    actual_output_dir = output_dir / month_subdir
+    actual_output_dir.mkdir(parents=True, exist_ok=True)
 
     filename = generate_filename(endpoint, timestamp)
-    filepath = output_dir / filename
+    filepath = actual_output_dir / filename
 
     json_bytes = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
 
@@ -93,5 +99,6 @@ def list_responses(
     if not responses_dir.exists():
         return []
 
-    files = list(responses_dir.glob(pattern))
+    # 搜尋 YYYYMM 子目錄中的檔案
+    files = list(responses_dir.glob(f"*/{pattern}"))
     return sorted(files, key=lambda p: p.stat().st_mtime, reverse=True)
