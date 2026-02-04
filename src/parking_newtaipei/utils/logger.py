@@ -20,7 +20,7 @@ def setup_logger(
     name: str = "parking_newtaipei",
     level: str = "INFO",
     log_file: Path | None = None,
-    backup_days: int = 30,
+    backup_days: int = 90,
 ) -> logging.Logger:
     """設定並回傳 logger
 
@@ -28,7 +28,7 @@ def setup_logger(
         name: Logger 名稱
         level: 日誌等級（DEBUG, INFO, WARNING, ERROR, CRITICAL）
         log_file: 日誌檔案路徑，若為 None 則只輸出到 console
-        backup_days: 日誌保留天數（預設 30 天）
+        backup_days: 日誌保留天數（預設 90 天）
 
     Returns:
         設定好的 Logger 物件

@@ -33,7 +33,7 @@ RESPONSES_PATH = Path(os.getenv("RESPONSES_PATH", str(RESPONSES_DIR)))
 
 # 日誌設定
 LOG_FILE = LOGS_DIR / "app.log"
-LOG_BACKUP_DAYS = int(os.getenv("LOG_BACKUP_DAYS", "30"))  # 日誌保留天數
+LOG_BACKUP_DAYS = int(os.getenv("LOG_BACKUP_DAYS", "90"))  # 日誌保留天數
 
 
 def ensure_directories() -> None:
