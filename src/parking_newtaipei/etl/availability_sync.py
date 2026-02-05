@@ -4,6 +4,7 @@
 """
 
 import csv
+import json
 from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
@@ -13,6 +14,7 @@ from parking_newtaipei.config import HEALTHCHECK_AVAILABILITY_URL
 from parking_newtaipei.db.availability import AvailabilityRepository
 from parking_newtaipei.utils.healthcheck import ping_healthcheck
 from parking_newtaipei.utils.logger import get_logger
+from parking_newtaipei.utils.time import now_iso
 
 # 新北市公有路外停車場即時賸餘車位數 API
 AVAILABILITY_API_URL = (
@@ -114,6 +116,25 @@ class AvailabilitySync:
 
         return content
 
+    def _save_json(self, records: list[dict]) -> None:
+        """將即時車位資料輸出為 JSON 檔案
+
+        Args:
+            records: 資料列表，每筆包含 parking_id 和 available_car
+        """
+        json_path = self.db_dir / "availability.json"
+
+        data = {
+            "updated_at": now_iso(),
+            "total_count": len(records),
+            "data": records,
+        }
+
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+        self.logger.info(f"JSON 檔案已輸出: {json_path}")
+
     def sync(self) -> AvailabilitySyncResult:
         """執行同步作業
 
@@ -149,6 +170,14 @@ class AvailabilitySync:
                 self.logger.error(error_msg)
                 result.errors.append(error_msg)
                 return result
+
+            # 輸出 JSON 檔案（最新資料）
+            try:
+                self._save_json(records)
+            except Exception as e:
+                error_msg = f"JSON 輸出失敗: {e}"
+                self.logger.error(error_msg)
+                result.errors.append(error_msg)
 
         # 記錄結果
         self.logger.info(
