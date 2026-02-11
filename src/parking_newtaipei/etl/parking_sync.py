@@ -166,6 +166,8 @@ class ParkingLotSync:
         if not force and previous_hash == current_hash and self.repo.has_data():
             self.logger.info(f"內容未變更（hash: {current_hash[:16]}...），跳過同步")
             result.skipped = True
+            # 跳過同步但仍發送 healthcheck 通報，讓監控知道排程有正常執行
+            ping_healthcheck(HEALTHCHECK_PARKING_URL, "停車場基本資料同步")
             return result
 
         if previous_hash != current_hash:
